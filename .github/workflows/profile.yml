@@ -1,0 +1,40 @@
+name: Build profile
+
+on:
+  schedule:
+    - cron: "30 18 * * *"   # daily, midnight IST
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/**"
+      - "assets/avatar.jpg"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Rebuild the header (photo comes from assets/avatar.jpg)
+      - name: Build 3D header
+        run: python scripts/build_header.py
+
+      # 3D contribution calendar (writes to profile-3d-contrib/)
+      - uses: yoshi389111/github-profile-3d-contrib@latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          USERNAME: ${{ github.repository_owner }}
+
+      - name: Commit
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add -A .
+          if git commit -m "Update profile graphics"; then git push; fi
